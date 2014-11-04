@@ -325,69 +325,9 @@ public class Sudoku {
         return positions[0];
     }
 
-    public static void main(final String[] args) {
-        //benchmark
-        final int[][][] samples = new int[][][]{
-                {{1, 3, 5, 2, 9, 7, 8, 6, 4},
-                        {9, 8, 2, 4, 1, 6, 7, 5, 3},
-                        {7, 6, 4, 3, 8, 5, 1, 9, 2},
-                        {2, 1, 8, 7, 3, 9, 6, 4, 5},
-                        {5, 9, 7, 8, 6, 4, 2, 3, 1},
-                        {6, 4, 3, 1, 5, 2, 9, 7, 8},
-                        {4, 2, 6, 5, 7, 1, 3, 8, 9},
-                        {3, 5, 9, 6, 2, 8, 4, 0, 7},
-                        {8, 7, 1, 9, 4, 3, 5, 2, 6}},
-                {{0, 3, 5, 2, 9, 0, 8, 6, 4},
-                        {0, 8, 2, 4, 1, 0, 7, 0, 3},
-                        {7, 6, 4, 3, 8, 0, 0, 9, 0},
-                        {2, 1, 8, 7, 3, 9, 0, 4, 0},
-                        {0, 0, 0, 8, 0, 4, 2, 3, 0},
-                        {0, 4, 3, 0, 5, 2, 9, 7, 0},
-                        {4, 0, 6, 5, 7, 1, 0, 0, 9},
-                        {3, 5, 9, 0, 2, 8, 4, 1, 7},
-                        {8, 0, 0, 9, 0, 0, 5, 2, 6}},
-                {{0, 0, 0, 7, 8, 6, 0, 0, 0},
-                        {0, 0, 7, 0, 0, 0, 4, 0, 0},
-                        {1, 0, 8, 0, 0, 0, 7, 0, 9},
-                        {3, 0, 0, 1, 0, 2, 0, 0, 8},
-                        {0, 2, 0, 0, 7, 0, 0, 9, 0},
-                        {5, 0, 0, 8, 0, 3, 0, 0, 7},
-                        {7, 0, 3, 0, 0, 0, 9, 0, 2},
-                        {0, 0, 9, 0, 0, 0, 3, 0, 0},
-                        {0, 0, 0, 3, 6, 9, 0, 0, 0}},
-                {{3, 1, 0, 0, 7, 0, 0, 0, 0},
-                        {9, 0, 0, 0, 0, 4, 0, 0, 0},
-                        {0, 0, 0, 0, 8, 0, 6, 0, 0},
-                        {0, 0, 0, 3, 0, 0, 0, 2, 0},
-                        {7, 0, 6, 0, 0, 0, 1, 0, 4},
-                        {0, 2, 0, 0, 0, 5, 0, 0, 0},
-                        {0, 0, 9, 0, 1, 0, 0, 0, 0},
-                        {0, 0, 0, 2, 0, 0, 0, 0, 7},
-                        {0, 0, 0, 0, 9, 0, 0, 5, 3}},
-        };
-        //TODO it should prerun for the JVM to optimize and result should be used so it would not optimize out useful code.
-        for (final int[][] sample : samples) {
-            final Sudoku s = new Sudoku(sample);
-            final long start = System.nanoTime();
-            final Sudoku result = Sudoku.solve(s);
-            System.out.println((System.nanoTime() - start) / 1000000);
-        }
-        //first version
-        //        2
-        //        12
-        //        264
-        //        1899
-
-        //first improvement
-        //        1
-        //        3
-        //        188
-        //        717
-
-        //second improvement
-        //        1
-        //        16
-        //        130
-        //        149
+    public static void main(final String[] args) throws IOException {
+        final BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+        final Sudoku sudoku = Sudoku.solve(Sudoku.fromReader(in));
+        sudoku.writeTo(new PrintWriter(System.out));
     }
 }
