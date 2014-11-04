@@ -1,15 +1,16 @@
 package com.pmorar;
 
 import java.io.*;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
- * Represents Sudoku game and allows to solve it.
+ * Represents a Sudoku game and allows to solve it.
  */
 public class Sudoku {
 
+    /**
+     * Returns a Sudoku puzzle read from the file with the provided filename.
+     */
     public static Sudoku fromFile(final String filename) throws IOException {
         final BufferedReader in = new BufferedReader(new FileReader(filename));
         try {
@@ -19,6 +20,9 @@ public class Sudoku {
         }
     }
 
+    /**
+     * Returns a Sudoku puzzle read from the reader.
+     */
     public static Sudoku fromReader(final Reader reader) throws IOException {
         final BufferedReader in = new BufferedReader(reader);
         try {
@@ -28,6 +32,9 @@ public class Sudoku {
         }
     }
 
+    /**
+     * Returns a Sudoku puzzle read from the string.
+     */
     public static Sudoku fromString(final String description) throws IOException {
         //a quick implementation, for performance it is better to use a separate parsing
         return fromReader(new StringReader(description));
@@ -39,14 +46,14 @@ public class Sudoku {
      * @param sudoku puzzle to solve.
      */
     public static Sudoku solve(final Sudoku sudoku) {
+        //a recursive solution
         if (sudoku.isSolved())
             return sudoku;
-        final Position pos = sudoku.getNextAvailablePosition();
+        final Position pos = sudoku.getNextPosition();
         if (pos == null)
             return null;
         for (final Integer action : pos.actions) {
-            final Sudoku step = new Sudoku(sudoku, pos.i, pos.j, action);
-            final Sudoku result = solve(step);
+            final Sudoku result = solve(new Sudoku(sudoku, pos.i, pos.j, action));
             if (result != null) {
                 return result;
             }
@@ -57,7 +64,7 @@ public class Sudoku {
     private static final int N = 9;
     private static final String DELIMITER = ",";
 
-    private final int[][] board = new int[N][N];
+    private final int[][] board;// = new int[N][];
 
     private final Options[] rowOptions = new Options[N];
     private final Options[] columnOptions = new Options[N];
@@ -65,12 +72,14 @@ public class Sudoku {
 
     /**
      * Initialized using a copy of the provided board.
+     *
      * @throws IllegalArgumentException if dimensions of the board are incorrect
      */
     public Sudoku(final int[][] board) {
         if (board.length != N) {
             throw new IllegalArgumentException("Illegal board dimension " + board.length);
         }
+        this.board = new int[N][N];
         for (int i = 0; i < N; i++) {
             if (board[i].length != N) {
                 throw new IllegalArgumentException("Illegal row dimension " + board[i].length);
@@ -85,9 +94,10 @@ public class Sudoku {
      * A copy of other.
      */
     public Sudoku(final Sudoku other) {
+        board = new int[N][N];
         for (int i = 0; i < N; i++) {
             System.arraycopy(other.board[i], 0, board[i], 0, N);
-            rowOptions[i] = new Options(other.rowOptions[i]);//TODO optimize
+            rowOptions[i] = new Options(other.rowOptions[i]);
             columnOptions[i] = new Options(other.columnOptions[i]);
             cellOptions[i] = new Options(other.cellOptions[i]);
         }
@@ -97,8 +107,14 @@ public class Sudoku {
      * A shallow copy of other, which makes a game step making necessary deep copies.
      */
     private Sudoku(final Sudoku other, final int i, final int j, final int value) {
+        this.board = new int[N][];
         for (int k = 0; k < N; k++) {
-            System.arraycopy(other.board[k], 0, board[k], 0, N);
+            if (k != i) {
+                board[k] = other.board[k];
+            } else {
+                board[k] = new int[N];
+                System.arraycopy(other.board[k], 0, board[k], 0, N);
+            }
         }
         System.arraycopy(other.rowOptions, 0, rowOptions, 0, N);
         System.arraycopy(other.columnOptions, 0, columnOptions, 0, N);
@@ -113,6 +129,7 @@ public class Sudoku {
     }
 
     private Sudoku(final BufferedReader in) throws IOException {
+        board = new int[N][N];
         for (int i = 0; i < N; i++) {
             final String line = in.readLine();
             if (line == null)
@@ -137,6 +154,9 @@ public class Sudoku {
         return true;
     }
 
+    /**
+     * Returns true if we can make a step in the specified entry.
+     */
     public boolean isAvailable(final int i, final int j) {
         return board[i][j] == 0;
     }
@@ -203,6 +223,8 @@ public class Sudoku {
             }
         }
 
+        //TODO aux information equality
+
         return true;
     }
 
@@ -213,25 +235,17 @@ public class Sudoku {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    private static enum OptionType {
-        Row,
-        Column,
-        Cell
-    }
 
     private static class Options {
         static final Set<Integer> ALL_AVAILABLE = new HashSet<Integer>(Arrays.asList(new Integer[]{1, 2, 3, 4, 5, 6, 7, 8, 9}));
 
-        final OptionType type;
         final Set<Integer> available;// = new HashSet<Integer>();
 
-        Options(final OptionType type) {
-            this.type = type;
+        Options() {
             available = new HashSet<Integer>(ALL_AVAILABLE);
         }
 
         Options(final Options other) {
-            type = other.type;
             available = new HashSet<Integer>(other.available);
         }
 
@@ -248,9 +262,9 @@ public class Sudoku {
 
     private void calculateOptions() {
         for (int i = 0; i < N; i++) {
-            rowOptions[i] = new Options(OptionType.Row);
-            columnOptions[i] = new Options(OptionType.Column);
-            cellOptions[i] = new Options(OptionType.Cell);
+            rowOptions[i] = new Options();
+            columnOptions[i] = new Options();
+            cellOptions[i] = new Options();
         }
         for (int i = 0; i < N; i++) {
             final Options rowOption = rowOptions[i];
@@ -283,7 +297,17 @@ public class Sudoku {
         }
     }
 
-    private Position getNextAvailablePosition() {
+    private static final Comparator<Position> POSITION_COMPARATOR = new Comparator<Position>() {
+        @Override
+        public int compare(final Position position, final Position position2) {
+            return position.actions.size() - position2.actions.size();
+        }
+    };
+
+    private Position getNextPosition() {
+        //get the entry with the lowest number of options available
+        final Position[] positions = new Position[N * N];
+        int n = 0;
         for (int i = 0; i < N; i++) {
             for (int j = 0; j < N; j++) {
                 if (board[i][j] == 0) {
@@ -292,15 +316,18 @@ public class Sudoku {
                     actions.retainAll(getCellOptions(i, j).available);
                     if (actions.size() == 0)
                         return null;
-                    return new Position(i, j, actions);
+                    positions[n++] = new Position(i, j, actions);
                 }
             }
         }
-        throw new AssertionError();
+        Arrays.sort(positions, 0, n, POSITION_COMPARATOR);
+
+        return positions[0];
     }
 
     public static void main(final String[] args) {
-        final int[][][] samples = new int[][][] {
+        //benchmark
+        final int[][][] samples = new int[][][]{
                 {{1, 3, 5, 2, 9, 7, 8, 6, 4},
                         {9, 8, 2, 4, 1, 6, 7, 5, 3},
                         {7, 6, 4, 3, 8, 5, 1, 9, 2},
@@ -338,20 +365,29 @@ public class Sudoku {
                         {0, 0, 0, 2, 0, 0, 0, 0, 7},
                         {0, 0, 0, 0, 9, 0, 0, 5, 3}},
         };
-        for (final int[][] sample: samples) {
+        //TODO it should prerun for the JVM to optimize and result should be used so it would not optimize out useful code.
+        for (final int[][] sample : samples) {
             final Sudoku s = new Sudoku(sample);
             final long start = System.nanoTime();
             final Sudoku result = Sudoku.solve(s);
             System.out.println((System.nanoTime() - start) / 1000000);
         }
-//        2
-//        12
-//        264
-//        1899
+        //first version
+        //        2
+        //        12
+        //        264
+        //        1899
 
-//        1
-//        3
-//        188
-//        717
+        //first improvement
+        //        1
+        //        3
+        //        188
+        //        717
+
+        //second improvement
+        //        1
+        //        16
+        //        130
+        //        149
     }
 }
