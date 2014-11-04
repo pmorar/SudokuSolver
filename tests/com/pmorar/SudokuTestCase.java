@@ -239,16 +239,10 @@ public class SudokuTestCase {
     public void testSolve() throws IOException {
         for (int i = 0; i < SAMPLE_BOARDS_NUM; i++) {
             final Sudoku s = getSampleBoard(i);
-            final long start = System.nanoTime();
             final Sudoku result = Sudoku.solve(s);
-            System.out.println((System.nanoTime() - start) / 1000000);
             Assert.assertEquals(getSampleSolution(i), result);
         }
     }
-//    1
-//    10
-//            220
-//            2192
 
 
 }

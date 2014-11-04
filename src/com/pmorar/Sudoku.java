@@ -5,7 +5,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-
+/**
+ * Represents Sudoku game and allows to solve it.
+ */
 public class Sudoku {
 
     public static Sudoku fromFile(final String filename) throws IOException {
@@ -31,15 +33,19 @@ public class Sudoku {
         return fromReader(new StringReader(description));
     }
 
+    /**
+     * Returns the solution or null if could not find it.
+     *
+     * @param sudoku puzzle to solve.
+     */
     public static Sudoku solve(final Sudoku sudoku) {
         if (sudoku.isSolved())
             return sudoku;
         final Position pos = sudoku.getNextAvailablePosition();
         if (pos == null)
             return null;
-        for (final Integer action: pos.actions) {
-            final Sudoku step = new Sudoku(sudoku);
-            step.set(pos.i, pos.j, action);
+        for (final Integer action : pos.actions) {
+            final Sudoku step = new Sudoku(sudoku, pos.i, pos.j, action);
             final Sudoku result = solve(step);
             if (result != null) {
                 return result;
@@ -57,6 +63,10 @@ public class Sudoku {
     private final Options[] columnOptions = new Options[N];
     private final Options[] cellOptions = new Options[N];
 
+    /**
+     * Initialized using a copy of the provided board.
+     * @throws IllegalArgumentException if dimensions of the board are incorrect
+     */
     public Sudoku(final int[][] board) {
         if (board.length != N) {
             throw new IllegalArgumentException("Illegal board dimension " + board.length);
@@ -71,6 +81,9 @@ public class Sudoku {
         calculateOptions();
     }
 
+    /**
+     * A copy of other.
+     */
     public Sudoku(final Sudoku other) {
         for (int i = 0; i < N; i++) {
             System.arraycopy(other.board[i], 0, board[i], 0, N);
@@ -78,6 +91,25 @@ public class Sudoku {
             columnOptions[i] = new Options(other.columnOptions[i]);
             cellOptions[i] = new Options(other.cellOptions[i]);
         }
+    }
+
+    /**
+     * A shallow copy of other, which makes a game step making necessary deep copies.
+     */
+    private Sudoku(final Sudoku other, final int i, final int j, final int value) {
+        for (int k = 0; k < N; k++) {
+            System.arraycopy(other.board[k], 0, board[k], 0, N);
+        }
+        System.arraycopy(other.rowOptions, 0, rowOptions, 0, N);
+        System.arraycopy(other.columnOptions, 0, columnOptions, 0, N);
+        System.arraycopy(other.cellOptions, 0, cellOptions, 0, N);
+
+        //step
+        board[i][j] = value;
+        rowOptions[i] = rowOptions[i].copyAndRemove(value);
+        columnOptions[j] = columnOptions[j].copyAndRemove(value);
+        final int k = getCellIndex(i, j);
+        cellOptions[k] = cellOptions[k].copyAndRemove(value);
     }
 
     private Sudoku(final BufferedReader in) throws IOException {
@@ -94,6 +126,8 @@ public class Sudoku {
         }
         calculateOptions();
     }
+
+    //------------------------------------------------------------------------------------------------------------------
 
     public boolean isSolved() {
         for (int i = 0; i < N; i++) {
@@ -201,6 +235,12 @@ public class Sudoku {
             available = new HashSet<Integer>(other.available);
         }
 
+        Options copyAndRemove(final Integer v) {
+            final Options o = new Options(this);
+            o.available.remove(v);
+            return o;
+        }
+
         boolean isLocked() {
             return available.size() == 0;
         }
@@ -224,7 +264,11 @@ public class Sudoku {
     }
 
     private Options getCellOptions(final int i, final int j) {
-        return cellOptions[(i / 3) * 3 + j / 3];
+        return cellOptions[getCellIndex(i, j)];
+    }
+
+    private int getCellIndex(final int i, final int j) {
+        return (i / 3) * 3 + j / 3;
     }
 
     private static class Position {
@@ -253,5 +297,61 @@ public class Sudoku {
             }
         }
         throw new AssertionError();
+    }
+
+    public static void main(final String[] args) {
+        final int[][][] samples = new int[][][] {
+                {{1, 3, 5, 2, 9, 7, 8, 6, 4},
+                        {9, 8, 2, 4, 1, 6, 7, 5, 3},
+                        {7, 6, 4, 3, 8, 5, 1, 9, 2},
+                        {2, 1, 8, 7, 3, 9, 6, 4, 5},
+                        {5, 9, 7, 8, 6, 4, 2, 3, 1},
+                        {6, 4, 3, 1, 5, 2, 9, 7, 8},
+                        {4, 2, 6, 5, 7, 1, 3, 8, 9},
+                        {3, 5, 9, 6, 2, 8, 4, 0, 7},
+                        {8, 7, 1, 9, 4, 3, 5, 2, 6}},
+                {{0, 3, 5, 2, 9, 0, 8, 6, 4},
+                        {0, 8, 2, 4, 1, 0, 7, 0, 3},
+                        {7, 6, 4, 3, 8, 0, 0, 9, 0},
+                        {2, 1, 8, 7, 3, 9, 0, 4, 0},
+                        {0, 0, 0, 8, 0, 4, 2, 3, 0},
+                        {0, 4, 3, 0, 5, 2, 9, 7, 0},
+                        {4, 0, 6, 5, 7, 1, 0, 0, 9},
+                        {3, 5, 9, 0, 2, 8, 4, 1, 7},
+                        {8, 0, 0, 9, 0, 0, 5, 2, 6}},
+                {{0, 0, 0, 7, 8, 6, 0, 0, 0},
+                        {0, 0, 7, 0, 0, 0, 4, 0, 0},
+                        {1, 0, 8, 0, 0, 0, 7, 0, 9},
+                        {3, 0, 0, 1, 0, 2, 0, 0, 8},
+                        {0, 2, 0, 0, 7, 0, 0, 9, 0},
+                        {5, 0, 0, 8, 0, 3, 0, 0, 7},
+                        {7, 0, 3, 0, 0, 0, 9, 0, 2},
+                        {0, 0, 9, 0, 0, 0, 3, 0, 0},
+                        {0, 0, 0, 3, 6, 9, 0, 0, 0}},
+                {{3, 1, 0, 0, 7, 0, 0, 0, 0},
+                        {9, 0, 0, 0, 0, 4, 0, 0, 0},
+                        {0, 0, 0, 0, 8, 0, 6, 0, 0},
+                        {0, 0, 0, 3, 0, 0, 0, 2, 0},
+                        {7, 0, 6, 0, 0, 0, 1, 0, 4},
+                        {0, 2, 0, 0, 0, 5, 0, 0, 0},
+                        {0, 0, 9, 0, 1, 0, 0, 0, 0},
+                        {0, 0, 0, 2, 0, 0, 0, 0, 7},
+                        {0, 0, 0, 0, 9, 0, 0, 5, 3}},
+        };
+        for (final int[][] sample: samples) {
+            final Sudoku s = new Sudoku(sample);
+            final long start = System.nanoTime();
+            final Sudoku result = Sudoku.solve(s);
+            System.out.println((System.nanoTime() - start) / 1000000);
+        }
+//        2
+//        12
+//        264
+//        1899
+
+//        1
+//        3
+//        188
+//        717
     }
 }
