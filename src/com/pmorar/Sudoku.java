@@ -328,6 +328,6 @@ public class Sudoku {
     public static void main(final String[] args) throws IOException {
         final BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
         final Sudoku sudoku = Sudoku.solve(Sudoku.fromReader(in));
-        System.out.println(sudoku);
+        System.out.print(sudoku);
     }
 }
