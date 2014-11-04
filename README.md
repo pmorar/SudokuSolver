@@ -1,8 +1,8 @@
 SudokuSolver
 ============
 
-A representation Sudoku puzzles, which allows to solve them.
+A representation of Sudoku puzzles, which allows to solve them.
 
-In a text format Sudoku puzzles are represented as in sudoku_sample.txt.
+See sudoku_sample.txt for an example of a text format of Sudoku puzzles.
 
 The test suit requires Unit4.
